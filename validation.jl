@@ -1,0 +1,53 @@
+using NPZ
+using Plots
+using Flux
+using Flux: Data.DataLoader
+using Flux: @epochs
+
+data_ld = npzread("D:\\Pumas\\Projects\\SubspaceInference\\Validation\\data.npy")
+x, y = (data_ld[:, 1], data_ld[:, 2])
+
+function features(x)
+    return hcat(x./2, (x./2).^2)
+end
+
+scatter(data_ld[:,1], data_ld[:,2], color=:red, pallette=:seaborn_rocket_gradient)
+
+f = features(x)
+
+f = reshape(f,2,:)
+y = reshape(y,1,:)
+data =  DataLoader(f,y, batchsize=50, shuffle=true)
+
+dims = [2, 200, 50, 50, 50, 1]
+layers = [Dense(dims[i], dims[i+1], Flux.relu) for i in 1:length(dims)-1]
+m = Chain(layers...)
+# m = Chain(Dense(2,4),Dense(4,1)) #model
+
+L(x, y) = Flux.Losses.mse(m(x), y) 
+
+ps = Flux.params(m) #model parameters
+
+opt = Momentum(0.01, 0.95)
+# opt = ADAM()
+
+
+callback() = @show(L(f,y))
+
+function my_train(epoches, L, ps, data, opt)
+	local training_loss
+	for ep in 1:epoches
+		for d in data
+			gs = gradient(ps) do
+				training_loss = L(d...)
+				return training_loss
+		    end
+		    Flux.update!(opt, ps, gs)
+		end
+		if mod(ep,1000) == 0
+			@show ep training_loss
+		end
+	end
+end
+@epochs 3000 Flux.train!(L, ps, data, opt, cb = () -> callback())
+
