@@ -43,6 +43,19 @@ opt = Momentum(0.01, 0.95)
 
 
 callback() = @show(L(f,y))
+function cyclic_LR(epoch, total_epochs; lr_init=0.01, lr_ratio=0.05)
+	t = (epoch + 1) / total_epochs
+
+	if t <= 0.5
+	    factor = 1.0
+	elseif t <= 0.9
+	    factor = 1.0 - (1.0 - lr_ratio) * (t - 0.5) / 0.4
+	else
+	    factor = lr_ratio
+	end
+
+	return (factor * lr_init)
+end
 
 function my_train(epoches, L, ps, data, opt)
 	local training_loss
@@ -54,9 +67,10 @@ function my_train(epoches, L, ps, data, opt)
 		    end
 		    Flux.update!(opt, ps, gs)
 		end
-		if mod(ep,100) == 0
-			@show ep training_loss
-		end
+		# if mod(ep,100) == 0
+		# 	@show ep training_loss
+		# end
+		@show ep training_loss
 	end
 end
 my_train(3000, L, ps, data, opt)
