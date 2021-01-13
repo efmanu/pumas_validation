@@ -4,24 +4,34 @@ using Flux
 using Flux: Data.DataLoader
 using Flux: @epochs
 
-data_ld = npzread("D:\\Pumas\\Projects\\SubspaceInference\\Validation\\data.npy")
-x, y = (data_ld[:, 1], data_ld[:, 2])
+root = "D:\\Pumas\\Projects\\SubspaceInference\\Validation";
+cd(root);
+py_weigths = npzread("abc.npy");
+
+data_ld = npzread("data.npy");
+x, y = (data_ld[:, 1], data_ld[:, 2]);
 
 function features(x)
     return hcat(x./2, (x./2).^2)
 end
 
-scatter(data_ld[:,1], data_ld[:,2], color=:red, pallette=:seaborn_rocket_gradient)
+scatter(data_ld[:,1], data_ld[:,2], color=:red, pallette=:seaborn_rocket_gradient);
 
-f = features(x)
+f = features(x);
 
-f = reshape(f,2,:)
-y = reshape(y,1,:)
-data =  DataLoader(f,y, batchsize=50, shuffle=true)
+f = reshape(f,2,:);
+y = reshape(y,1,:);
+data =  DataLoader(f,y, batchsize=50, shuffle=true);
 
 dims = [2, 200, 50, 50, 50, 1]
-layers = [Dense(dims[i], dims[i+1], Flux.relu) for i in 1:length(dims)-1]
+layers = [Dense(dims[i], dims[i+1], Flux.relu) for i in 1:length(dims)-1];
 m = Chain(layers...)
+
+θ, re = Flux.destructure(m);
+θ = py_weigths;
+
+m = re(θ);
+
 # m = Chain(Dense(2,4),Dense(4,1)) #model
 
 L(x, y) = Flux.Losses.mse(m(x), y) 
@@ -44,10 +54,10 @@ function my_train(epoches, L, ps, data, opt)
 		    end
 		    Flux.update!(opt, ps, gs)
 		end
-		if mod(ep,1000) == 0
+		if mod(ep,100) == 0
 			@show ep training_loss
 		end
 	end
 end
-@epochs 3000 Flux.train!(L, ps, data, opt, cb = () -> callback())
+my_train(3000, L, ps, data, opt)
 
