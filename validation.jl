@@ -5,6 +5,11 @@ using Flux: Data.DataLoader
 using Flux: @epochs
 
 root = "D:\\Pumas\\Projects\\SubspaceInference\\Validation";
+
+include("main.jl")
+
+
+
 cd(root);
 py_weigths = npzread("abc.npy");
 
@@ -42,36 +47,6 @@ opt = Momentum(0.01, 0.95)
 # opt = ADAM()
 
 
-callback() = @show(L(f,y))
-function cyclic_LR(epoch, total_epochs; lr_init=0.01, lr_ratio=0.05)
-	t = (epoch + 1) / total_epochs
-
-	if t <= 0.5
-	    factor = 1.0
-	elseif t <= 0.9
-	    factor = 1.0 - (1.0 - lr_ratio) * (t - 0.5) / 0.4
-	else
-	    factor = lr_ratio
-	end
-
-	return (factor * lr_init)
-end
-
-function my_train(epoches, L, ps, data, opt)
-	local training_loss
-	for ep in 1:epoches
-		for d in data
-			gs = gradient(ps) do
-				training_loss = L(d...)
-				return training_loss
-		    end
-		    Flux.update!(opt, ps, gs)
-		end
-		# if mod(ep,100) == 0
-		# 	@show ep training_loss
-		# end
-		@show ep training_loss
-	end
-end
-my_train(3000, L, ps, data, opt)
+epoches = 3000
+my_train(epoches, L, ps, data, opt, cyclic_lr = false)
 
